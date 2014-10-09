@@ -3,10 +3,11 @@ module Experiments.Tapes where
 import Control.Arrow
 import Control.Comonad
 import Data.Stream
+import Data.Tape2D
 import Data.Tape
 
 sinT :: Tape Double
-sinT = fmap (sin . (/10)) . unfoldT pred succ $ 0
+sinT = fmap (sin . (/10)) . iterateT pred succ $ 0
 
 deriv :: Tape Double -> Double
 deriv (Tape (l :~ _) _ (r :~ _)) = (r - l) / 2 * 10
@@ -18,24 +19,30 @@ sinT'' :: Tape Double
 sinT'' = deriv <<= deriv <<= sinT
 
 type FiniteTape a = ([a], a, [a])
+type FiniteTape2D a = FiniteTape (FiniteTape a)
 
 mask :: Num a => FiniteTape a -> Tape a -> a
 mask (mls, mx, mrs) (Tape ls x rs) = sum (zipWith (*) (reverse mls) (toListS ls))
                                    + mx * x
                                    + sum (zipWith (*) mrs (toListS rs))
 
+-- mask2d :: Num a => FiniteTape2D a -> Tape2D a -> a
+-- mask2d (mls, mx, mrs) (Tape ls x rs) = undefined
+
 blur :: Fractional a => Tape a -> a
 blur = mask ([0.025,0.075,0.2],0.4,[0.2,0.075,0.025])
+
+
 
 diffr :: Fractional a => Tape a -> a
 diffr = mask ([-0.5],0,[0.5])
 
-type Tape2D a = Tape (Tape a)
+-- type Tape2D a = Tape (Tape a)
 
-grid :: (Double, Double) -> Double -> Tape2D (Double, Double)
-grid (x0, y0) d = unfoldT (fmap (first (subtract d))) (fmap (first (+ d)))
-                . unfoldT (second (subtract d)) (second (+ d))
-                $ (x0, y0)
+-- outer layer: x's
+-- inner layer: y's
+grid :: Num a => (a, a) -> a -> Tape2D (a, a)
+grid p0 d = iterateT2D (first (subtract d)) (first (+d)) (second (subtract d)) (second (+d)) p0
 
 line :: Num a => a -> a -> Tape a
-line x0 dx = unfoldT (subtract dx) (+ dx) x0
+line x0 dx = iterateT (subtract dx) (+ dx) x0
