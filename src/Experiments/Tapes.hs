@@ -1,6 +1,9 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Experiments.Tapes where
 
 import Control.Arrow
+import Data.Indexed
+import Control.Applicative
 import Control.Comonad
 import Data.Stream
 import Data.Tape2D
@@ -32,10 +35,26 @@ mask (mls, mx, mrs) (Tape ls x rs) = sum (zipWith (*) (reverse mls) (toListS ls)
 blur :: Fractional a => Tape a -> a
 blur = mask ([0.025,0.075,0.2],0.4,[0.2,0.075,0.025])
 
-
-
 diffr :: Fractional a => Tape a -> a
 diffr = mask ([-0.5],0,[0.5])
+
+laplace :: (Fractional a, RelIndex (Int, Int) t, Comonad t) => t a -> a
+laplace t = relWithW t (c (-1)   0 )
+          + relWithW t (c   1    0 )
+          + relWithW t (c   0  (-1))
+          + relWithW t (c   0    1 )
+          - extract t * 4
+  where
+    c :: Int -> Int -> (Int, Int)
+    c = (,)
+
+sharpen :: (Fractional a, RelIndex (Int, Int) t, Comonad t) => a -> t a -> a
+sharpen k = liftA2 (\f f'' -> f - k * f'') extract laplace
+
+-- laplace t = sum $ zipWith (curry (relWithW t)) [1 :: Int]
+--                                                [2 :: Int]
+  -- where
+  --   p = relWith t (0, 0) 0
 
 -- type Tape2D a = Tape (Tape a)
 

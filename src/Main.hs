@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Main where
 
 -- import Data.PArray
@@ -24,8 +26,8 @@ import Data.Tape
 --     extract (Store f i) = f i
 --     extend g (Store f i) = Store (\j -> g (Store f j)) i
 
-fromImage :: (Pixel a, Num a) => Image a -> Tape2D a
-fromImage im = fmap f (grid (0, 0) 1)
+fromImage :: (Pixel a, Num a) => Image a -> OffsetTape2D Int a
+fromImage im = indexFromT2D (0,0) . fmap f $ grid (0, 0) 1
   where
     w = imageWidth im
     h = imageHeight im
@@ -35,7 +37,7 @@ fromImage im = fmap f (grid (0, 0) 1)
              | y >= h = 0
              | otherwise = pixelAt im x y
 
-toImage :: Pixel a => Image a -> Tape2D a -> Image a
+toImage :: (Pixel a, TotalIndex (Int, Int) f) => Image a -> f a -> Image a
 toImage im tp = generateImage f (imageWidth im) (imageHeight im)
   where
     f x y = tp # (x, y)
@@ -44,20 +46,28 @@ toImage im tp = generateImage f (imageWidth im) (imageHeight im)
     -- f t 0 y = f (fmap shiftR t) 0 (y - 1)
     -- f t x y = f (fmap shiftR . shiftR $ t) (x - 1) (y - 1)
 
+withCoKleisli :: (Pixel a, Num a) => Image a -> (OffsetTape2D Int a -> a) -> Image a
+withCoKleisli im ck = toImage im . extend ck . fromImage $ im
+
+constrain :: Ord c => c -> c -> c -> c
+constrain mi ma = max mi . min ma
+
 main :: IO ()
 main = do
-    -- Right (ImageY8 im) <- readImage "media/cameraman.jpg"
+    Right (ImageY8 im) <- readImage "media/cameraman.jpg"
     -- let imTape = (fmap . fmap) fromIntegral $ fromImage im :: Tape2D Double
     --     imBlur = fmap (extend diffr) imTape :: Tape2D Double
     --     imBackI = (fmap . fmap) round imBlur
     --     imBack = toImage im imBackI
-    -- -- print $ (takeS 40 . fmap (takeS 40) . fmap rightsT . rightsT) imTape
-    -- -- print $ (imTape ~!!~ 2) ~!!~ 2
+    -- let imRes = withCoKleisli im (round . laplace . fmap fromIntegral)
+    let imRes = withCoKleisli im (round . constrain 0 255 . sharpen 0.4 . fmap fromIntegral)
+    -- print $ (takeS 52 . fmap (takeS 40) . fmap rightsT . rightsT) imTape
+    -- print $ (imTape ~!!~ 2) ~!!~ 2
     -- putStrLn "hey"
-    -- saveBmpImage "media/cameraman2.bmp" (ImageY8 imBack)
+    saveBmpImage "media/cameraman2.bmp" (ImageY8 imRes)
     return ()
     -- f
-    -- print $ map deriv . take 20 . iterate shiftR $ sinT
+    -- print $ map deriv . take 21 . iterate shiftR $ sinT
     -- print $ takeT 20 sinT
     -- print $ takeT 20 (deriv <<= deriv <<= deriv <<= deriv <<= sinT)
     -- print $ takeT 20 sinT''
