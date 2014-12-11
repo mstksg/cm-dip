@@ -32,6 +32,18 @@ takeS n (x :~ xs) = x : takeS (n-1) xs
 toListS :: Stream a -> [a]
 toListS (x :~ xs) = x : toListS xs
 
+foldlS :: ((b, Int) -> a -> (b, Bool)) -> b -> Stream a -> b
+foldlS f = go 0
+  where
+    go n z (x :~ xs) = case f (z, n) x of
+                         (y, False) -> y
+                         (y, True)  -> y `seq` go (n + 1) y xs
+
+foldrS :: ((a, Int) -> b -> b) -> Stream a -> b
+foldrS f = go 0
+  where
+    go n (x :~ xs) = f (x, n) (go (n + 1) xs)
+
 instance (Ord a, Num a) => RelIndex a Stream where
     s ? n | n <= 0    = Just x
           | otherwise = xs ? (n - 1)
@@ -63,7 +75,8 @@ instance Monad Stream where
 
 instance Comonad Stream where
     extract = headS
-    extend f xs = f xs :~ extend f (tailS xs)
+    extend f xs@(_ :~ xst) = f xs :~ extend f xst
+    duplicate xs = xs :~ duplicate xs
 
 -- stream with offset to some "origin"
 data OffsetStream o a = OffsetStream { osStream :: Stream a

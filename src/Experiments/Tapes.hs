@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+
 module Experiments.Tapes where
 
 import Control.Arrow
@@ -51,6 +52,19 @@ laplace t = relWithW t (c (-1)   0 )
 sharpen :: (Fractional a, RelIndex (Int, Int) t, Comonad t) => a -> t a -> a
 sharpen k = liftA2 (\f f'' -> f - k * f'') extract laplace
 
+avg :: (Fractional a, RelIndex (Int, Int) t, Comonad t) => Int -> t a -> a
+avg r t = sum [ relWithW t (i, j) | i <- [-r..r], j <- [-r..r]] / ((2*fromIntegral r+1)^(2 :: Int))
+
+gauss :: (RealFloat a, RelIndex (Int, Int) t, Comonad t) => a -> t a -> a
+gauss r t = sum (liftA2 f [-r'..r'] [-r'..r']) * c
+  where
+    f i j = relWithW t (i, j) * exp (ec * d i j)
+    d x y = fromIntegral (x * x + y * y)
+    σ     = r / 2
+    ec    = -1 / (2 * σ * σ)
+    c     = 1 / (2 * pi * σ * σ)
+    r'    = ceiling r :: Int
+
 -- laplace t = sum $ zipWith (curry (relWithW t)) [1 :: Int]
 --                                                [2 :: Int]
   -- where
@@ -65,3 +79,4 @@ grid p0 d = iterateT2D (first (subtract d)) (first (+d)) (second (subtract d)) (
 
 line :: Num a => a -> a -> Tape a
 line x0 dx = iterateT (subtract dx) (+ dx) x0
+

@@ -33,6 +33,18 @@ unfoldT fl fr x = Tape ls y rs
     ls        = unfoldS fl x
     (y :~ rs) = unfoldS fr x
 
+-- foldlT :: ((b, Int) -> a -> (b, Bool)) -> (b -> b -> c) -> b -> Tape a -> c
+-- foldlT f g = g ()
+--   where
+--     go n z (x :~ xs) = case f (z, n) x of
+--                          (y, False) -> y
+--                          (y, True)  -> y `seq` go (n + 1) y xs
+
+-- foldrT :: ((a, Int) -> b -> b) -> Stream a -> b
+-- foldrT f = go 0
+--   where
+--     go n (x :~ xs) = f (x, n) (go (n + 1) xs)
+
 instance (Ord a, Num a) => RelIndex a Tape where
     t ? n | n < 0     = ls ? (n - 1)
           | n > 0     = rs ? (n - 1)
