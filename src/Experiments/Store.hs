@@ -58,8 +58,8 @@ instance Num a => Index a (Store a) where
 instance Num a => TotalIndex a (Store a) where
     st #@ i = peek i st
 
-withCoKleisli :: (Pixel a, Num a) => Image a -> (Store (V2 Int) a -> a) -> Image a
-withCoKleisli im ck = toImageV2 im . extend ck . fromImage $ im
+withCoKleisli :: (Pixel a, Num a) => (Store (V2 Int) a -> a) -> (Image a -> Image a)
+withCoKleisli ck im = toImageV2 im . extend ck . fromImage $ im
 
 -- gaussS :: (RealFloat a, RelIndex (V2 Int) t, Comonad t) => a -> t a -> a
 -- gaussS r t = sum (liftA2 f [-r'..r'] [-r'..r']) * c

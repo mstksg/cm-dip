@@ -4,6 +4,7 @@
 module Data.Stream where
 
 import Control.Applicative
+import Control.Comonad.Store
 import Control.Comonad
 import Data.Indexed
 
@@ -99,6 +100,10 @@ instance Enum o => Comonad (OffsetStream o) where
       where
         s' = fmap f . OffsetStream <$> iterateS tailS s
                                    <*> iterateS pred o
+
+instance (Ord o, Num o, Enum o) => ComonadStore o (OffsetStream o) where
+    pos (OffsetStream _ o) = o
+    peek o (OffsetStream s _) = s # o
 
 instance (Ord a, Num a) => RelIndex a (OffsetStream o) where
     (OffsetStream s _) ? n = s ? n

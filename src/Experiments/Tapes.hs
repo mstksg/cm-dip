@@ -40,32 +40,6 @@ blur = mask ([0.025,0.075,0.2],0.4,[0.2,0.075,0.025])
 diffr :: Fractional a => Tape a -> a
 diffr = mask ([-0.5],0,[0.5])
 
-laplace :: (Fractional a, RelIndex (V2 Int) t, Comonad t) => t a -> a
-laplace t = relWithW t (c (-1)   0 )
-          + relWithW t (c   1    0 )
-          + relWithW t (c   0  (-1))
-          + relWithW t (c   0    1 )
-          - extract t * 4
-  where
-    c :: Int -> Int -> V2 Int
-    c = V2
-
-sharpen :: (Fractional a, RelIndex (V2 Int) t, Comonad t) => a -> t a -> a
-sharpen k = liftA2 (\f f'' -> f - k * f'') extract laplace
-
-avg :: (Fractional a, RelIndex (V2 Int) t, Comonad t) => Int -> t a -> a
-avg r t = sum [ relWithW t (V2 i j) | i <- [-r..r], j <- [-r..r]] / ((2*fromIntegral r+1)^(2 :: Int))
-
-gauss :: (RealFloat a, RelIndex (V2 Int) t, Comonad t) => a -> t a -> a
-gauss r t = sum (liftA2 f [-r'..r'] [-r'..r']) * c
-  where
-    f i j = relWithW t (V2 i j) * exp (ec * d i j)
-    d x y = fromIntegral (x * x + y * y)
-    σ     = r / 2
-    ec    = -1 / (2 * σ * σ)
-    c     = 1 / (2 * pi * σ * σ)
-    r'    = ceiling r :: Int
-
 -- laplace t = sum $ zipWith (curry (relWithW t)) [1 :: Int]
 --                                                [2 :: Int]
   -- where
