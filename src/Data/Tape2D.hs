@@ -5,9 +5,11 @@ module Data.Tape2D where
 
 import Data.Tape
 import Control.Arrow
+import Control.Lens.Setter
 import Control.Comonad
 import Control.Applicative
 import Data.Indexed
+import Linear.V2
 
 newtype Tape2D a = Tape2D { getTapes :: Tape (Tape a)
                           }
@@ -47,18 +49,18 @@ shiftD2D (Tape2D t) = Tape2D (fmap shiftL t)
 shiftU2D :: Tape2D a -> Tape2D a
 shiftU2D (Tape2D t) = Tape2D (fmap shiftR t)
 
-instance (Ord a, Num a) => RelIndex (a, a) Tape2D where
-    Tape2D t ? (x, y) = ys ? y
+instance (Ord a, Num a) => RelIndex (V2 a) Tape2D where
+    Tape2D t ? (V2 x y) = ys ? y
       where
         ys = t # x
 
-instance (Ord a, Num a) => TotalRelIndex (a, a) Tape2D where
-    Tape2D t # (x, y) = ys # y
+instance (Ord a, Num a) => TotalRelIndex (V2 a) Tape2D where
+    Tape2D t # (V2 x y) = ys # y
       where
         ys = t # x
 
-instance (Ord a, Num a) => Index (a, a) Tape2D
-instance (Ord a, Num a) => TotalIndex (a, a) Tape2D
+instance (Ord a, Num a) => Index (V2 a) Tape2D
+instance (Ord a, Num a) => TotalIndex (V2 a) Tape2D
 
 instance Functor Tape2D where
     fmap f (Tape2D t) = Tape2D . (fmap . fmap) f $ t
@@ -71,12 +73,12 @@ instance Comonad Tape2D where
     extract (Tape2D t)   = extract . extract $ t
     duplicate = iterateT2D shiftL2D shiftR2D shiftD2D shiftU2D
 
-indexFromT2D :: (o, o) -> Tape2D a -> OffsetTape2D o a
+indexFromT2D :: V2 o -> Tape2D a -> OffsetTape2D o a
 indexFromT2D = flip OffsetTape2D
 
 -- tape2d with a stored reference to some "origin"
 data OffsetTape2D o a = OffsetTape2D { ot2dTape   :: Tape2D a
-                                     , ot2dOffset :: (o, o)
+                                     , ot2dOffset :: V2 o
                                      }
 
 instance Functor (OffsetTape2D o) where
@@ -87,26 +89,26 @@ instance Enum o => Comonad (OffsetTape2D o) where
     duplicate (OffsetTape2D t o) = OffsetTape2D t' o
       where
         t' = OffsetTape2D <$> iterateT2D shiftL2D shiftR2D shiftD2D shiftU2D t
-                          <*> iterateT2D (first succ) (first pred) (second succ) (second pred) o
+                          <*> iterateT2D (over _x succ) (over _x pred) (over _y succ) (over _y pred) o
     extend f (OffsetTape2D t o)  = OffsetTape2D t' o
       where
         t' = fmap f . OffsetTape2D <$> iterateT2D shiftL2D shiftR2D shiftD2D shiftU2D t
-                                   <*> iterateT2D (first succ) (first pred) (second succ) (second pred) o
+                                   <*> iterateT2D (over _x succ) (over _x pred) (over _y succ) (over _y pred) o
 
-instance (Ord a, Num a) => RelIndex (a, a) (OffsetTape2D a) where
-    OffsetTape2D (Tape2D t) _ ? (x, y) = ys ? y
+instance (Ord a, Num a) => RelIndex (V2 a) (OffsetTape2D a) where
+    OffsetTape2D (Tape2D t) _ ? (V2 x y) = ys ? y
       where
         ys = t # x
 
-instance (Ord a, Num a) => TotalRelIndex (a, a) (OffsetTape2D a) where
-    OffsetTape2D (Tape2D t) _ # (x, y) = ys # y
+instance (Ord a, Num a) => TotalRelIndex (V2 a) (OffsetTape2D a) where
+    OffsetTape2D (Tape2D t) _ # (V2 x y) = ys # y
       where
         ys = t # x
 
-instance (Ord a, Num a) => Index (a, a) (OffsetTape2D a) where
-    (OffsetTape2D t (ox, oy)) ?@ (x, y) = t ? (x + ox, y + oy)
+instance (Ord a, Num a) => Index (V2 a) (OffsetTape2D a) where
+    (OffsetTape2D t o) ?@ p = t ? (o + p)
 
-instance (Ord a, Num a) => TotalIndex (a, a) (OffsetTape2D a) where
-    (OffsetTape2D t (ox, oy)) #@ (x, y) = t # (x + ox, y + oy)
+instance (Ord a, Num a) => TotalIndex (V2 a) (OffsetTape2D a) where
+    (OffsetTape2D t o) #@ p = t # (o + p)
 
 

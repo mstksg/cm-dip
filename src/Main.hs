@@ -25,7 +25,7 @@ main :: IO ()
 main = do
     Right (ImageY8 im) <- readImage "media/cameraman.jpg"
     -- let imRes = withCoKleisli' im (sharpen 0.4)
-    let imRes = withCoKleisli' im (gaussS 5)
+    let imRes = withCoKleisli' im (gauss 5)
     saveBmpImage "media/cameraman4.bmp" (ImageY8 imRes)
     return ()
 

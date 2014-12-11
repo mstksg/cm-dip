@@ -61,13 +61,13 @@ instance Num a => TotalIndex a (Store a) where
 withCoKleisli :: (Pixel a, Num a) => Image a -> (Store (V2 Int) a -> a) -> Image a
 withCoKleisli im ck = toImageV2 im . extend ck . fromImage $ im
 
-gaussS :: (RealFloat a, RelIndex (V2 Int) t, Comonad t) => a -> t a -> a
-gaussS r t = sum (liftA2 f [-r'..r'] [-r'..r']) * c
-  where
-    f i j = relWithW t (V2 i j) * exp (ec * d i j)
-    d x y = fromIntegral (x * x + y * y)
-    σ     = r / 2
-    ec    = -1 / (2 * σ * σ)
-    c     = 1 / (2 * pi * σ * σ)
-    r'    = ceiling r :: Int
+-- gaussS :: (RealFloat a, RelIndex (V2 Int) t, Comonad t) => a -> t a -> a
+-- gaussS r t = sum (liftA2 f [-r'..r'] [-r'..r']) * c
+--   where
+--     f i j = relWithW t (V2 i j) * exp (ec * d i j)
+--     d x y = fromIntegral (x * x + y * y)
+--     σ     = r / 2
+--     ec    = -1 / (2 * σ * σ)
+--     c     = 1 / (2 * pi * σ * σ)
+--     r'    = ceiling r :: Int
 
