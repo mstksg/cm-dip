@@ -14,6 +14,8 @@ import Data.Functor.Identity
 import Data.Indexed hiding ((!))
 import Data.Word
 import Linear.V2
+import Data.Function.Memoize
+import Data.Memoizing ()
 
 fromArray :: (Unbox a, Source r a, Num a) => Array r DIM2 a -> Store (V2 Int) a
 fromArray im = store f 0
