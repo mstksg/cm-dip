@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -14,9 +15,10 @@ import qualified Data.Indexed as I
 import Control.Comonad
 -- import qualified Data.Vector.Unboxed as V
 
-data FArray r sh a = FArray !(Array r sh a)
-                            !sh
-                            !sh
+data FArray r sh a = FArray { fArrayArray  :: !(Array r sh a)
+                            , fArrayFocus  :: !sh
+                            , fArrayExtent :: !sh
+                            }
 
 instance Shape sh => Functor (FArray D sh) where
     fmap f (FArray xs i e) = FArray (R.map f xs) i e
@@ -35,11 +37,41 @@ withCoKleisliArray ck g = fromFunction e f
     FArray g' _ _ = ck <<= (FArray g (Z :. 0 :. 0) e)
     f i = g' ! i
 
-instance I.RelIndex DIM2 (FArray D DIM2) where
-    (FArray xs (Z:.y:.x) _) ? (Z:.y':.x') = Just $ xs ! (Z :. (y+y') :. (x+x'))
+instance (Shape a, Num a) => I.RelIndex a (FArray D a) where
+    FArray xs i _ ? p = Just $ xs ! (i + p)
 
--- instance Num a => TotalRelIndex a (Store a) where
---     st # i = peeks (+i) st
+instance (Shape a, Num a) => I.TotalRelIndex a (FArray D a) where
+    FArray xs i _ # p = xs ! (i + p)
+
+instance (Shape a, Num a) => I.Index a (FArray D a) where
+    FArray xs _ _ ?@ p = Just $ xs ! p
+
+instance (Shape a, Num a) => I.TotalIndex a (FArray D a) where
+    FArray xs _ _ #@ p = xs ! p
+
+instance Num Z where
+    _ + _ = Z
+    _ * _ = Z
+    _ - _ = Z
+    abs _ = Z
+    negate _ = Z
+    signum _ = Z
+    fromInteger _ = Z
+
+instance (Num a, Num b) => Num (a :. b) where
+    (a:.b) + (c:.d) = (a+c):.(b+d)
+    (a:.b) * (c:.d) = (a*c):.(b*d)
+    (a:.b) - (c:.d) = (a-c):.(b-d)
+    negate (a:.b)   = negate a :. negate b
+    abs (a:.b)      = abs a :. abs b
+    signum (a:.b)   = signum a :. signum b
+    fromInteger x   = fromInteger x :. fromInteger x
+
+-- test :: DIM2 -> DIM2 -> DIM2
+-- test = (+)
+
+-- instance Index DIM2 (FArray D DIM2) where
+--     (FArray xs)
 
 -- instance Num a => Index a (Store a) where
 --     st ?@ i = Just $ peek i st

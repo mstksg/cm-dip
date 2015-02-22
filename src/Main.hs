@@ -48,6 +48,7 @@ main = do
     -- let imRes = withCoKleisli' (sharpen 0.4) im
     -- let imRes = withCoKleisli' (gauss 2 =<= gauss 2) im
     let imRes = withCoKleisli' (gaussE 2 =<= gaussE 2) im
+    -- let imRes = withCoKleisli' (gaussE 2) im
     saveBmpImage "media/cameraman6.bmp" (ImageY8 imRes)
     return ()
 
